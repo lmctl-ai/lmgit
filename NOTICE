@@ -1,0 +1,27 @@
+lmgit
+Copyright (c) 2026 Lattice Systems LLC
+
+This product includes software derived from git-mcp-server
+(https://github.com/cyanheads/git-mcp-server), version 2.15.3,
+Copyright 2026 Casey Hand @cyanheads, licensed under the Apache License,
+Version 2.0. A copy of that license is in LICENSE-APACHE. The upstream
+project ships no NOTICE file of its own.
+
+Derived files (Apache-2.0; each carries a modification notice above the
+preserved upstream header):
+
+  src/types.ts                       from src/services/git/types.ts
+  src/index.ts                       adapted from src/services/git/providers/cli/CliGitProvider.ts
+  src/operations/**                  from src/services/git/providers/cli/operations/**
+  src/utils/**                       from src/services/git/providers/cli/utils/**
+
+Modifications by Lattice Systems LLC: the git provider was ported from the
+MCP server to a standalone command-line program. The MCP server, dependency
+injection, request-context logging and OpenTelemetry wrapper were removed;
+imports were rewritten for the standalone layout; write operations are gated
+by a per-method policy check (dry-run, read-only, confirmation) before any git
+command is built; errors are mapped to the CLI's JSON error envelope.
+
+All other files (including src/cli.ts, src/schemas.ts and src/lm-git.ts, whose
+read-only inspection ops originated in lmctl-ai/lmprobe) are original work of
+Lattice Systems LLC under the MIT License in LICENSE.
