@@ -1,0 +1,27 @@
+// access: read
+// What it does: Shows line-by-line blame attribution (author, commit, content) for a file.
+// When to use it: Identify who introduced specific changes or lines in a source file.
+// How to run: lmscript examples/who-touched.lms <file> [path]
+// How to preview: lmscript --dry-run examples/who-touched.lms <file> [path]
+import "@lmctl-ai/lmgit";
+
+if (len(ARGV) == 0) {
+  println("Error: file path required as first argument");
+  exit(1);
+}
+
+file = ARGV[0];
+dir = len(ARGV) > 1 ? ARGV[1] : ".";
+r = git2.lm_blame({ path: dir, file: file });
+
+if (r.status == "simulated") {
+  println("would run: git2.lm_blame");
+} else if (r.status != "ok") {
+  println("Error:", get(r, "error.message", "failed to blame file"));
+  exit(1);
+} else {
+  for (row in r.result.rows) {
+    shortCommit = slice(row.commit, 0, 7);
+    println(f"{row.line}: {shortCommit} ({row.author.name}) {row.content}");
+  }
+}

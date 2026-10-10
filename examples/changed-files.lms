@@ -1,0 +1,23 @@
+// access: read
+// What it does: Lists files changed and diff statistics against a target revision.
+// When to use it: Review modified files and lines added/deleted before merging or committing.
+// How to run: lmscript examples/changed-files.lms [ref] [path]
+// How to preview: lmscript --dry-run examples/changed-files.lms [ref] [path]
+import "@lmctl-ai/lmgit";
+
+targetRef = len(ARGV) > 0 ? ARGV[0] : "HEAD";
+dir = len(ARGV) > 1 ? ARGV[1] : ".";
+r = git2.lm_diff({ path: dir, from: targetRef });
+
+if (r.status == "simulated") {
+  println("would run: git2.lm_diff");
+} else if (r.status != "ok") {
+  println("Error:", get(r, "error.message", "failed to diff changes"));
+  exit(1);
+} else {
+  for (f in r.result.rows) {
+    println(f"{f.status} {f.path} (+{f.additions} -{f.deletions})");
+  }
+  stats = r.result.stats;
+  println(f"Total: {stats.files} files changed (+{stats.insertions} -{stats.deletions})");
+}

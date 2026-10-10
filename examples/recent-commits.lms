@@ -1,0 +1,21 @@
+// access: read
+// What it does: Displays recent commits with short hash, author, and commit summary.
+// When to use it: Inspect recent changes or verify the last applied commits in a repo.
+// How to run: lmscript examples/recent-commits.lms [limit] [path]
+// How to preview: lmscript --dry-run examples/recent-commits.lms [limit] [path]
+import "@lmctl-ai/lmgit";
+
+limit = len(ARGV) > 0 ? num(ARGV[0]) : 5;
+dir = len(ARGV) > 1 ? ARGV[1] : ".";
+r = git2.lm_log({ path: dir, maxCount: limit });
+
+if (r.status == "simulated") {
+  println("would run: git2.lm_log");
+} else if (r.status != "ok") {
+  println("Error:", get(r, "error.message", "failed to fetch log"));
+  exit(1);
+} else {
+  for (c in r.result.rows) {
+    println(f"{c.short_id} - {c.author.name}: {c.summary}");
+  }
+}

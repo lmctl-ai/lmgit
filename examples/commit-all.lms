@@ -1,0 +1,32 @@
+// access: write
+// What it does: Stages all working tree changes and records a new commit with the given message.
+// When to use it: Automate staging and committing a completed change set.
+// How to run: lmscript examples/commit-all.lms <message> [path]
+// How to preview: lmscript --dry-run examples/commit-all.lms <message> [path]
+import "@lmctl-ai/lmgit";
+
+if (len(ARGV) == 0) {
+  println("Error: commit message required as first argument");
+  exit(1);
+}
+
+msg = ARGV[0];
+dir = len(ARGV) > 1 ? ARGV[1] : ".";
+
+addRes = git2.add({ path: dir, all: true });
+if (addRes.status == "simulated") {
+  println("would run: git2.add");
+} else if (addRes.status != "ok") {
+  println("Error:", get(addRes, "error.message", "failed to stage changes"));
+  exit(1);
+}
+
+commitRes = git2.commit({ path: dir, message: msg });
+if (commitRes.status == "simulated") {
+  println("would run: git2.commit");
+} else if (commitRes.status != "ok") {
+  println("Error:", get(commitRes, "error.message", "failed to commit"));
+  exit(1);
+} else {
+  println(f"Committed {commitRes.result.commit}: {msg}");
+}

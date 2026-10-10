@@ -366,6 +366,14 @@ async function main(): Promise<number> {
         'Structured git CLI via the git binary, with dry-run and read-only policy enforcement.',
       ops: makeOps(),
       buildContext: (policy: Policy): Git2Ctx => ({ git: new Git2({ policy }) }),
+      product: {
+        name: 'git',
+        supported: '>=2.43.0 <3.0.0',
+        detect: {
+          argv: ['git', '--version'],
+          pattern: 'git version (\\d+\\.\\d+\\.\\d+)',
+        },
+      },
     },
     process.argv.slice(2),
   );

@@ -1,0 +1,20 @@
+// access: read
+// What it does: Lists configured git remotes and their fetch and push URLs.
+// When to use it: Inspect remote repository targets before pushing or fetching.
+// How to run: lmscript examples/remote-inventory.lms [path]
+// How to preview: lmscript --dry-run examples/remote-inventory.lms [path]
+import "@lmctl-ai/lmgit";
+
+dir = len(ARGV) > 0 ? ARGV[0] : ".";
+r = git2.lm_remote({ path: dir });
+
+if (r.status == "simulated") {
+  println("would run: git2.lm_remote");
+} else if (r.status != "ok") {
+  println("Error:", get(r, "error.message", "failed to list remotes"));
+  exit(1);
+} else {
+  for (rem in r.result.rows) {
+    println(f"{rem.name} - fetch: {rem.fetch_url} (push: {rem.push_url})");
+  }
+}

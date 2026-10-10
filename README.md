@@ -39,6 +39,50 @@ or `--input-file`) or a GraphQL document (`--input-graphql`). Output is JSON on
 stdout; errors are `{"success":false,"error":{"code","message","data"}}` with a
 non-zero exit code.
 
+## Use from lmscript
+
+> [!NOTE]
+> Available in lmscript >= the release that includes schema module import.
+
+lmscript can import this tool's schema directly:
+
+```ts
+import "@lmctl-ai/lmgit";
+
+const status = await git2.lm_status({ path: "." });
+```
+
+Or with an alias:
+
+```ts
+import "@lmctl-ai/lmgit" as mygit;
+
+const diff = await mygit.lm_diff({ path: ".", staged: true });
+```
+
+Or targeting the development channel:
+
+```ts
+import "@lmctl-ai/lmgit#dev";
+```
+
+### Channel files and release workflow
+
+The repository publishes two schema contracts at the root of its default branch:
+- `cli.schema.latest.json` — the contract of the latest stable release (default for `import "@lmctl-ai/lmgit"`).
+- `cli.schema.dev.json` — the active development contract (used by `import "@lmctl-ai/lmgit#dev"`).
+
+When releasing a new tool version, copy `cli.schema.dev.json` to `cli.schema.latest.json` in the release commit. Automated tests verify that `cli.schema.dev.json` is byte-for-byte identical to `bun src/cli.ts --schema`, and that all differences between `latest` and `dev` are strictly additive.
+
+### Product compatibility
+
+`git2` declares and enforces product version requirements for the underlying `git` binary:
+- Product name: `git`
+- Supported versions: `>=2.43.0 <3.0.0`
+- Detection: `git --version` (pattern `git version (\d+\.\d+\.\d+)`)
+
+If the installed `git` binary is missing or outside this range, operations are refused with error code `UNSUPPORTED_PRODUCT_VERSION` (exit code 10). Introspection flags (`--schema`, `--list`, `--help`) succeed regardless of the product check. The `git2` binary must be installed and available on `PATH` at runtime; installing the CLI tool is separate.
+
 ## Safety flags
 
 Every write goes through the same policy before any command is built:

@@ -1,0 +1,22 @@
+// access: read
+// What it does: Reports all branches, current branch, upstream tracking, and ahead/behind counts.
+// When to use it: Check synchronization status across local and remote branches.
+// How to run: lmscript examples/branch-report.lms [path]
+// How to preview: lmscript --dry-run examples/branch-report.lms [path]
+import "@lmctl-ai/lmgit" as g;
+
+dir = len(ARGV) > 0 ? ARGV[0] : ".";
+r = g.lm_branch({ path: dir, all: true });
+
+if (r.status == "simulated") {
+  println("would run: git2.lm_branch");
+} else if (r.status != "ok") {
+  println("Error:", get(r, "error.message", "failed to list branches"));
+  exit(1);
+} else {
+  for (b in r.result.rows) {
+    marker = b.current ? "* " : "  ";
+    upstream = b.upstream ? f" [{b.upstream}: +{b.ahead}/-{b.behind}]" : "";
+    println(f"{marker}{b.name}{upstream}");
+  }
+}

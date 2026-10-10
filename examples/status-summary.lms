@@ -1,0 +1,22 @@
+// access: read
+// What it does: Summarizes working tree status (branch, clean/dirty, staged/unstaged counts).
+// When to use it: Quick health check of repository state before branching or committing.
+// How to run: lmscript examples/status-summary.lms [path]
+// How to preview: lmscript --dry-run examples/status-summary.lms [path]
+import "@lmctl-ai/lmgit";
+
+dir = len(ARGV) > 0 ? ARGV[0] : ".";
+r = git2.lm_status({ path: dir });
+
+if (r.status == "simulated") {
+  println("would run: git2.lm_status");
+} else if (r.status != "ok") {
+  println("Error:", get(r, "error.message", "failed to check status"));
+  exit(1);
+} else {
+  res = r.result;
+  branch = res.headName;
+  state = res.clean ? "clean" : "dirty";
+  changes = len(res.rows);
+  println(f"Branch: {branch} ({state}, {changes} changed files)");
+}
