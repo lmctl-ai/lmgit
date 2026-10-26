@@ -5,7 +5,7 @@ path = ARGV.len() > 1 ? ARGV[1] : ".";
 
 p = _lmcode_ cli="lmgit" install="github:lmctl-ai/lmgit@latest";
 let repo = git.open(${path});
-print("repo: " + repo.path());
+print("repo: " + ${path});
 print("branch: " + repo.current_branch());
 if (repo.is_clean()) {
   print("working tree: clean");

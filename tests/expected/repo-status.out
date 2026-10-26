@@ -1,4 +1,4 @@
-repo: /home/mma/repos/dsl/lmgit
+repo: .
 branch: main
 working tree: dirty
 [ M] src/app.go
