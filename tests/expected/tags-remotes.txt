@@ -1,0 +1,4 @@
+tag: v1.2.0: 
+tag: v1.1.0: 
+remote: origin: https://github.com/octo/demo.git
+remote: upstream: https://github.com/octo/upstream.git

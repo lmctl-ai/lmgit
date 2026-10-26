@@ -1,0 +1,17 @@
+# Recent commits with hash, author and date.
+# Run:    lmscript examples/recent-commits.lms [repo-path] [limit]
+out = ARGV.len() > 0 ? ARGV[0] : "build/recent-commits.dslb";
+path = ARGV.len() > 1 ? ARGV[1] : ".";
+limit = ARGV.len() > 2 ? num(ARGV[2]) : 10;
+
+p = _lmcode_ cli="lmgit" install="github:lmctl-ai/lmgit@latest";
+let repo = git.open(${path});
+let commits = repo.log(${limit});
+for (i in range(0, commits.len())) {
+  let c = commits.at(i);
+  print(c.hash() + " " + c.subject() + " (@" + c.author() + ", " + c.date() + ")");
+  report.add("commit", c.hash(), c.subject() + " by " + c.author());
+}
+report.write_text("build/recent-commits.txt");
+end _lmcode_
+savedsl(p, out);

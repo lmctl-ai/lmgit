@@ -1,0 +1,17 @@
+# CI gate: fails (exit 4, APP_FAIL) when the working tree has changes.
+# Run:    lmscript examples/uncommitted-changes.lms [repo-path]
+out = ARGV.len() > 0 ? ARGV[0] : "build/uncommitted-changes.dslb";
+path = ARGV.len() > 1 ? ARGV[1] : ".";
+
+p = _lmcode_ cli="lmgit" install="github:lmctl-ai/lmgit@latest";
+let repo = git.open(${path});
+let entries = repo.status();
+for (i in range(0, entries.len())) {
+  let e = entries.at(i);
+  print("changed: " + e.path() + " [" + e.index_status() + e.work_status() + "]");
+  report.add("uncommitted", e.path(), "index=" + e.index_status() + " work=" + e.work_status());
+}
+print("entries: " + str(entries.len()));
+report.fail_if_any();
+end _lmcode_
+savedsl(p, out);

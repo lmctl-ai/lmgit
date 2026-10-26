@@ -1,0 +1,112 @@
+{
+  "dsl.schema": 2,
+  "name": "lmgit",
+  "types": {
+    "Git": {
+      "methods": {
+        "dry_run": [
+          { "params": ["bool"], "returns": "self" }
+        ],
+        "is_dry_run": [
+          { "params": [], "returns": "bool" }
+        ],
+        "version": [
+          { "params": [], "returns": "string" }
+        ],
+        "open": [
+          { "params": ["string"], "returns": "Repo" }
+        ],
+        "clone": [
+          { "params": ["string", "string"], "returns": "Repo" }
+        ]
+      }
+    },
+    "Repo": {
+      "methods": {
+        "path": [ { "params": [], "returns": "string" } ],
+        "current_branch": [ { "params": [], "returns": "string" } ],
+        "is_clean": [ { "params": [], "returns": "bool" } ],
+        "status": [ { "params": [], "returns": "StatusList" } ],
+        "branches": [ { "params": [], "returns": "BranchList" } ],
+        "log": [ { "params": ["int"], "returns": "CommitList" } ],
+        "tags": [ { "params": [], "returns": "Strings" } ],
+        "remote_names": [ { "params": [], "returns": "Strings" } ],
+        "remote_url": [ { "params": ["string"], "returns": "string" } ],
+        "config": [ { "params": ["string"], "returns": "string" } ],
+        "diff": [ { "params": ["bool"], "returns": "string" } ],
+        "show": [ { "params": ["string"], "returns": "string" } ],
+        "checkout": [ { "params": ["string"], "returns": "string" } ],
+        "branch_create": [ { "params": ["string"], "returns": "string" } ],
+        "commit": [ { "params": ["string"], "returns": "string" } ],
+        "push": [ { "params": ["string", "string"], "returns": "string" } ],
+        "tag_create": [ { "params": ["string", "string"], "returns": "string" } ]
+      }
+    },
+    "StatusList": {
+      "methods": {
+        "len": [ { "params": [], "returns": "int" } ],
+        "at": [ { "params": ["int"], "returns": "StatusEntry" } ]
+      }
+    },
+    "StatusEntry": {
+      "methods": {
+        "path": [ { "params": [], "returns": "string" } ],
+        "index_status": [ { "params": [], "returns": "string" } ],
+        "work_status": [ { "params": [], "returns": "string" } ]
+      }
+    },
+    "Branch": {
+      "methods": {
+        "name": [ { "params": [], "returns": "string" } ],
+        "is_current": [ { "params": [], "returns": "bool" } ]
+      }
+    },
+    "BranchList": {
+      "methods": {
+        "len": [ { "params": [], "returns": "int" } ],
+        "at": [ { "params": ["int"], "returns": "Branch" } ]
+      }
+    },
+    "Commit": {
+      "methods": {
+        "hash": [ { "params": [], "returns": "string" } ],
+        "subject": [ { "params": [], "returns": "string" } ],
+        "author": [ { "params": [], "returns": "string" } ],
+        "date": [ { "params": [], "returns": "string" } ]
+      }
+    },
+    "CommitList": {
+      "methods": {
+        "len": [ { "params": [], "returns": "int" } ],
+        "at": [ { "params": ["int"], "returns": "Commit" } ]
+      }
+    },
+    "Strings": {
+      "methods": {
+        "len": [ { "params": [], "returns": "int" } ],
+        "at": [ { "params": ["int"], "returns": "string" } ]
+      }
+    },
+    "Report": {
+      "methods": {
+        "add": [ { "params": ["string", "string", "string"], "returns": "void" } ],
+        "len": [ { "params": [], "returns": "int" } ],
+        "write_text": [ { "params": ["string"], "returns": "void" } ],
+        "write_json": [ { "params": ["string"], "returns": "void" } ],
+        "fail_if_any": [ { "params": [], "returns": "void" } ]
+      }
+    }
+  },
+  "functions": {
+    "print": [
+      { "params": ["string"], "returns": "void" }
+    ],
+    "assert_close": [
+      { "params": ["float", "float", "float"], "returns": "void" }
+    ]
+  },
+  "context": {
+    "git": "Git",
+    "report": "Report"
+  }
+}

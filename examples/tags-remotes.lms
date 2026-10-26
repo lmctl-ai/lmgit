@@ -1,0 +1,21 @@
+# Tags, remotes and the origin URL.
+# Run:    lmscript examples/tags-remotes.lms [repo-path]
+out = ARGV.len() > 0 ? ARGV[0] : "build/tags-remotes.dslb";
+path = ARGV.len() > 1 ? ARGV[1] : ".";
+
+p = _lmcode_ cli="lmgit" install="github:lmctl-ai/lmgit@latest";
+let repo = git.open(${path});
+let tags = repo.tags();
+for (i in range(0, tags.len())) {
+  print("tag: " + tags.at(i));
+  report.add("tag", tags.at(i), "");
+}
+let remotes = repo.remote_names();
+for (i in range(0, remotes.len())) {
+  let name = remotes.at(i);
+  print("remote: " + name);
+  report.add("remote", name, repo.remote_url(name));
+}
+report.write_text("build/tags-remotes.txt");
+end _lmcode_
+savedsl(p, out);

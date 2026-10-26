@@ -1,0 +1,20 @@
+# Commits staged changes. Dry-run unless a 3rd argument is given; the
+# created commit hash is printed on a live run.
+# Run:    lmscript examples/make-commit.lms [repo-path] <message> [--live]
+out = ARGV.len() > 0 ? ARGV[0] : "build/make-commit.dslb";
+path = ARGV.len() > 1 ? ARGV[1] : ".";
+message = ARGV.len() > 2 ? ARGV[2] : "chore: automated commit";
+live = ARGV.len() > 3 ? ARGV[3] == "--live" : false;
+
+p = _lmcode_ cli="lmgit" install="github:lmctl-ai/lmgit@latest";
+git.dry_run(!${live});
+let repo = git.open(${path});
+let result = repo.commit(${message});
+if (git.is_dry_run()) {
+  print("dry-run: would commit with message '" + ${message} + "'");
+} else {
+  print("commit: " + result);
+}
+report.write_text("build/make-commit.txt");
+end _lmcode_
+savedsl(p, out);

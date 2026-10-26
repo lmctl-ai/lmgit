@@ -1,0 +1,6 @@
+changed: src/app.go [ M]
+changed: notes.txt [??]
+changed: docs/new.md [A ]
+changed: staged.txt [M ]
+entries: 4
+{"ok": false, "phase": "run", "code": "APP_FAIL", "message": "dsl line 15:8: report has 4 finding(s), expected none", "line": 15, "column": 8}

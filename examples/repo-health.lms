@@ -1,0 +1,30 @@
+# CI gate: checks branch, cleanliness and remote configuration.
+# Run:    lmscript examples/repo-health.lms [repo-path]
+out = ARGV.len() > 0 ? ARGV[0] : "build/repo-health.dslb";
+path = ARGV.len() > 1 ? ARGV[1] : ".";
+
+p = _lmcode_ cli="lmgit" install="github:lmctl-ai/lmgit@latest";
+let repo = git.open(${path});
+if (repo.current_branch() != "main") {
+  report.add("wrong-branch", repo.current_branch(), "expected main");
+}
+if (!repo.is_clean()) {
+  report.add("dirty-tree", repo.path(), "working tree has uncommitted changes");
+}
+let remotes = repo.remote_names();
+let has_origin = false;
+for (i in range(0, remotes.len())) {
+  if (remotes.at(i) == "origin") { has_origin = true; }
+}
+if (!has_origin) {
+  report.add("no-origin", repo.path(), "no origin remote configured");
+}
+if (report.len() == 0) {
+  print("repo health: OK");
+} else {
+  print("repo health: " + str(report.len()) + " finding(s)");
+}
+report.write_text("build/repo-health.txt");
+report.fail_if_any();
+end _lmcode_
+savedsl(p, out);

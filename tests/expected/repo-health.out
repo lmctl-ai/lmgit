@@ -1,0 +1,2 @@
+repo health: 1 finding(s)
+{"ok": false, "phase": "run", "code": "APP_FAIL", "message": "dsl line 28:8: report has 1 finding(s), expected none", "line": 28, "column": 8}

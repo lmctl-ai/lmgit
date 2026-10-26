@@ -1,0 +1,8 @@
+repo: /home/mma/repos/dsl/lmgit
+branch: main
+working tree: dirty
+[ M] src/app.go
+[??] notes.txt
+[A ] docs/new.md
+[M ] staged.txt
+{"ok": true, "result": null}

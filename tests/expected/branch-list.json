@@ -1,0 +1,1 @@
+[{"kind":"branch","subject":"main","message":"current=true"},{"kind":"branch","subject":"dev","message":"current=false"},{"kind":"branch","subject":"feature/x","message":"current=false"}]

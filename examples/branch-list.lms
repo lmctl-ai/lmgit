@@ -1,0 +1,19 @@
+# Local branches with the current one marked.
+# Run:    lmscript examples/branch-list.lms [repo-path]
+out = ARGV.len() > 0 ? ARGV[0] : "build/branch-list.dslb";
+path = ARGV.len() > 1 ? ARGV[1] : ".";
+
+p = _lmcode_ cli="lmgit" install="github:lmctl-ai/lmgit@latest";
+let repo = git.open(${path});
+let branches = repo.branches();
+print("current branch: " + repo.current_branch());
+for (i in range(0, branches.len())) {
+  let b = branches.at(i);
+  let mark = "  ";
+  if (b.is_current()) { mark = "* "; }
+  print(mark + b.name());
+  report.add("branch", b.name(), "current=" + str(b.is_current()));
+}
+report.write_json("build/branch-list.json");
+end _lmcode_
+savedsl(p, out);
