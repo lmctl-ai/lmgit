@@ -39,7 +39,7 @@ chmod +x build/fake-bin/git
 export PATH="$PWD/build/fake-bin:$PWD/build:$PATH"
 
 # --- CLI protocol -------------------------------------------------------
-[ "$("$HOST" --version)" = "lmgit 0.1.0" ] || fail "--version"
+[ "$("$HOST" --version)" = "lmgit 0.1.1" ] || fail "--version"
 ok "--version"
 cmp -s <("$HOST" --dsl-schema) schema/lmgit.dsl.json || fail "--dsl-schema bytes differ from schema/lmgit.dsl.json"
 ok "--dsl-schema equals schema/lmgit.dsl.json"

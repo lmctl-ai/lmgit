@@ -12,13 +12,15 @@ found on PATH skips the download. (Verified for lmgh 2026-10-26; same
 convention, verify here after the first release.) The only user prerequisite
 is `git` >= 2.20; `LMGIT_GIT` overrides the git path.
 
-Releases: `scripts/release.sh <version>` (no `v` prefix) builds the six
-assets + SHA256SUMS and creates the GitHub release; the `version` constant
-in host.go must match.
+Releases: pushing a `v*` tag publishes automatically — CI runs `./test.sh`
+and, once tests pass, the release job cross-builds the six assets +
+SHA256SUMS, verifies the tag matches `lmgit --version`, and creates the GitHub
+release. `scripts/release.sh <version>` (no `v` prefix) remains as the local
+fallback; the `version` constant in host.go must match.
 
 ## CLI protocol
 
-- `lmgit --version` → `lmgit 0.1.0`
+- `lmgit --version` → `lmgit 0.1.1`
 - `lmgit --dsl-schema [--json]` → embedded schema bytes (byte-equal to
   `schema/lmgit.dsl.json`; every `.dslb` header hash is sha256 of these
   bytes)

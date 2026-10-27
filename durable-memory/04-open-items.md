@@ -16,9 +16,10 @@ Candidate work after v0, in no fixed order.
 
 ## Platform
 
-- Release v0.1.0 ships the six `lmgit-OS-ARCH` assets + SHA256SUMS; verify
-  the fresh-cache, no-PATH-binary install flow and record it here.
-- CI workflow for Go + test.sh.
+- Release v0.1.1 on publishes from CI: pushing a `v*` tag runs `./test.sh`
+  and the release job cross-builds the six `lmgit-OS-ARCH` assets +
+  SHA256SUMS, verifies the tag matches `lmgit --version`, and creates the
+  GitHub release (v0.1.0 was cut locally with `scripts/release.sh`).
 - Commit signing/hooks: the host runs `git commit` with the repo's own
   configuration (hooks run); document or add `--no-verify` policy if agent
   use cases need it.

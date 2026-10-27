@@ -1,14 +1,19 @@
 name: CI
 
 on:
+  push:
+    branches: ["**"]
+    tags: ["v*"]
   workflow_dispatch:
 
+# Least privilege: the test job and asset builds only read; the release job
+# alone gets contents: write.
 permissions:
   contents: read
 
 concurrency:
   group: ci-${{ github.ref }}
-  cancel-in-progress: true
+  cancel-in-progress: ${{ !startsWith(github.ref, 'refs/tags/') }}
 
 jobs:
   test:
@@ -28,3 +33,58 @@ jobs:
         run: npm install -g @lmctl-ai/lmctl@0.2.426
       - name: Build and test
         run: ./test.sh
+
+  release:
+    # Pushing a v* tag publishes: assets build only after tests pass.
+    if: startsWith(github.ref, 'refs/tags/v')
+    needs: test
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    permissions:
+      contents: write # gh release create
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-go@44694675825211faa026b3c33043df3e48a5fa00 # v6.0.0
+        with:
+          go-version: "1.26"
+
+      - name: Build release assets (Go cross-compiles; one runner builds all six)
+        run: |
+          PROG=lmgit
+          OUT=dist
+          mkdir -p "$OUT"
+          build() { # goos os arch suffix
+            GOOS="$1" GOARCH="$3" CGO_ENABLED=0 go build -trimpath -ldflags='-buildid=' \
+              -o "$OUT/$PROG-$2-$4$5" .
+          }
+          build linux linux amd64 x64 ""
+          build linux linux arm64 arm64 ""
+          build darwin macos amd64 x64 ""
+          build darwin macos arm64 arm64 ""
+          build windows windows amd64 x64 ".exe"
+          build windows windows arm64 arm64 ".exe"
+          (cd "$OUT" && sha256sum "$PROG"-* > SHA256SUMS)
+
+      - name: Tag matches lmgit --version (lmscript @latest compares them)
+        run: |
+          got="$(./dist/lmgit-linux-x64 --version)"
+          test "$got" = "lmgit ${GITHUB_REF_NAME#v}" || { echo "::error::tag $GITHUB_REF_NAME but binary says '$got' (bump the version constant in host.go)"; exit 1; }
+
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: lmgit-release
+          path: dist/
+          if-no-files-found: error
+
+      - name: Attach binaries to the GitHub release
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          # idempotent: re-running a tag's workflow overwrites the assets
+          if gh release view "$GITHUB_REF_NAME" -R "$GITHUB_REPOSITORY" >/dev/null 2>&1; then
+            gh release upload "$GITHUB_REF_NAME" -R "$GITHUB_REPOSITORY" --clobber dist/*
+          else
+            gh release create "$GITHUB_REF_NAME" -R "$GITHUB_REPOSITORY" --title "lmgit ${GITHUB_REF_NAME#v}" --generate-notes dist/*
+          fi

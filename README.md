@@ -69,8 +69,9 @@ scripts/sync-git.sh         # fetch the pinned git/git checkout (third_party/)
 ./test.sh                   # 34 checks: build, parity, examples vs a fake git, refusals
 ```
 
-Releases: `scripts/release.sh <version>` builds the six
-`lmgit-{linux,macos,windows}-{x64,arm64}` assets plus `SHA256SUMS` and
-creates the GitHub release; the asset names are the lmscript `install=`
-convention. [durable-memory/](durable-memory/) records the design and
+Releases: pushing a `v*` tag publishes automatically — CI runs `./test.sh`
+and, once tests pass, cross-builds the six `lmgit-{linux,macos,windows}-{x64,arm64}`
+assets plus `SHA256SUMS` and creates the GitHub release (the asset names are
+the lmscript `install=` convention). `scripts/release.sh <version>` remains as
+the local fallback. [durable-memory/](durable-memory/) records the design and
 decisions.
