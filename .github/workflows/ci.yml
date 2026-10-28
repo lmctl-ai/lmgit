@@ -88,3 +88,51 @@ jobs:
           else
             gh release create "$GITHUB_REF_NAME" -R "$GITHUB_REPOSITORY" --title "lmgit ${GITHUB_REF_NAME#v}" --generate-notes dist/*
           fi
+
+      - name: Verify the uploaded windows-arm64 asset (no hosted arm64 Windows runner exists)
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          gh release download "$GITHUB_REF_NAME" -R "$GITHUB_REPOSITORY" -p 'lmgit-windows-arm64.exe'
+          echo "$(grep 'lmgit-windows-arm64.exe' dist/SHA256SUMS | awk '{print $1}')  lmgit-windows-arm64.exe" | sha256sum -c -
+
+  verify:
+    # Download every asset on a machine running its real OS and execute it.
+    # GitHub provides x64/arm64 Linux, Apple Silicon/Intel macOS and Windows
+    # runners; windows-arm64 is covered by the download-back checksum above.
+    if: startsWith(github.ref, 'refs/tags/v')
+    needs: release
+    runs-on: ${{ matrix.os }}
+    name: verify ${{ matrix.asset }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - { os: ubuntu-22.04,     asset: lmgit-linux-x64 }
+          - { os: ubuntu-22.04-arm, asset: lmgit-linux-arm64 }
+          - { os: macos-15,         asset: lmgit-macos-arm64 }
+          - { os: macos-15-intel,   asset: lmgit-macos-x64 }
+          - { os: windows-2022,     asset: lmgit-windows-x64.exe }
+    defaults:
+      run:
+        shell: bash
+    steps:
+      - name: Download asset + SHA256SUMS from the release
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: gh release download "$GITHUB_REF_NAME" -R "$GITHUB_REPOSITORY" -p '${{ matrix.asset }}' -p SHA256SUMS
+
+      - name: Checksum matches the release SHA256SUMS
+        run: |
+          expected="$(awk -v f='${{ matrix.asset }}' '$2 == f {print $1}' SHA256SUMS)"
+          [ -n "$expected" ] || { echo "::error::no checksum for ${{ matrix.asset }}"; exit 1; }
+          if command -v sha256sum >/dev/null 2>&1; then actual="$(sha256sum '${{ matrix.asset }}' | awk '{print $1}')";
+          else actual="$(shasum -a 256 '${{ matrix.asset }}' | awk '{print $1}')"; fi
+          [ "$actual" = "$expected" ] || { echo "::error::checksum mismatch: $actual != $expected"; exit 1; }
+
+      - name: Binary runs and reports the tag version
+        run: |
+          chmod +x '${{ matrix.asset }}'
+          got="$(./'${{ matrix.asset }}' --version)"
+          test "$got" = "lmgit ${GITHUB_REF_NAME#v}" || { echo "::error::'$got' != 'lmgit ${GITHUB_REF_NAME#v}'"; exit 1; }
+          echo "$got on $(uname -srm)"

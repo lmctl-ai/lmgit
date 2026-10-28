@@ -19,7 +19,11 @@ Candidate work after v0, in no fixed order.
 - Release v0.1.1 on publishes from CI: pushing a `v*` tag runs `./test.sh`
   and the release job cross-builds the six `lmgit-OS-ARCH` assets +
   SHA256SUMS, verifies the tag matches `lmgit --version`, and creates the
-  GitHub release (v0.1.0 was cut locally with `scripts/release.sh`).
+  GitHub release (v0.1.0 was cut locally with `scripts/release.sh`). Since
+  v0.1.2 a `verify` job also downloads each asset on its native GitHub
+  runner (x64/arm64 Linux, Intel/ARM macOS, Windows; windows-arm64 gets a
+  download-back checksum in the release job) and executes `--version`
+  against the tag.
 - Commit signing/hooks: the host runs `git commit` with the repo's own
   configuration (hooks run); document or add `--no-verify` policy if agent
   use cases need it.

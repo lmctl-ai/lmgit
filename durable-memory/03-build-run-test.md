@@ -20,7 +20,7 @@ fallback; the `version` constant in host.go must match.
 
 ## CLI protocol
 
-- `lmgit --version` → `lmgit 0.1.1`
+- `lmgit --version` → `lmgit 0.1.2`
 - `lmgit --dsl-schema [--json]` → embedded schema bytes (byte-equal to
   `schema/lmgit.dsl.json`; every `.dslb` header hash is sha256 of these
   bytes)

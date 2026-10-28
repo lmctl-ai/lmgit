@@ -12,7 +12,7 @@ import (
 	"github.com/lmctl-ai/lmcode-go"
 )
 
-const version = "0.1.1"
+const version = "0.1.2"
 
 // gitVersionRe parses the first line of `git --version`.
 var gitVersionRe = regexp.MustCompile(`git version (\d+)\.(\d+)\.(\d+)`)
