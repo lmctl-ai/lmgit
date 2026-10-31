@@ -21,12 +21,12 @@ fallback; the `version` constant in host.go must match.
 ## CLI protocol
 
 - `lmgit --version` → `lmgit 0.1.2`
-- `lmgit --dsl-schema [--json]` → embedded schema bytes (byte-equal to
+- `lmgit --lmcode-schema [--json]` → embedded schema bytes (byte-equal to
   `schema/lmgit.dsl.json`; every `.dslb` header hash is sha256 of these
   bytes)
-- `lmgit --dsl-signatures` → registry signatures (full SDK std + host; a
+- `lmgit --lmcode-signatures` → registry signatures (full SDK std + host; a
   superset of the compiler's catalog)
-- `lmgit --dsl FILE` → load + run; success prints one
+- `lmgit --lmcode FILE` → load + run; success prints one
   `{"ok": true, "result": null}` line
 - anything else → one-line `CLI_USAGE` JSON, exit 2
 
@@ -41,3 +41,7 @@ examples byte-diffed against `tests/expected/`, refusal chunks (bad limit,
 list bounds, not-a-repo, bad ref/remote, branch conflict, checkout missing,
 empty commit message, missing git binary, live/dry writes, `APP_FAIL`, junk
 bytecode, missing file).
+
+## Native host flags
+
+Only the lmcode flag family is accepted, without compatibility aliases. The full gate checks retired-option refusal before file effects, exact schema/signature bytes, and new loader routing in scratch HOME. Missing-input application exit 4 is preserved. The immutable Go SDK pin supports actual v6 source output; the compiler selector checks emitted capability instead of package metadata. DSLB and .dslb internal names remain.

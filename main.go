@@ -13,7 +13,7 @@ import (
 var schemaBytes []byte
 
 func usageError() int {
-	msg := `{"ok": false, "phase": "cli", "code": "CLI_USAGE", "message": "usage: lmgit --version | --dsl-schema [--json] | --dsl-signatures | --dsl FILE"}`
+	msg := `{"ok": false, "phase": "cli", "code": "CLI_USAGE", "message": "usage: lmgit --version | --lmcode-schema [--json] | --lmcode-signatures | --lmcode FILE"}`
 	fmt.Println(msg)
 	return 2
 }
@@ -31,13 +31,13 @@ func run(args []string) int {
 	case "--version":
 		fmt.Printf("lmgit %s\n", version)
 		return 0
-	case "--dsl-schema":
+	case "--lmcode-schema":
 		if len(args) > 2 || (len(args) == 2 && args[1] != "--json") {
 			return usageError()
 		}
 		os.Stdout.Write(schemaBytes)
 		return 0
-	case "--dsl-signatures":
+	case "--lmcode-signatures":
 		if len(args) != 1 {
 			return usageError()
 		}
@@ -45,7 +45,7 @@ func run(args []string) int {
 			fmt.Println(sig)
 		}
 		return 0
-	case "--dsl":
+	case "--lmcode":
 		if len(args) != 2 {
 			return usageError()
 		}

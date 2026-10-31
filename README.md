@@ -38,15 +38,15 @@ savedsl(p, out);
 
 ```sh
 lmscript repo-status.lms /path/to/repo   # compiles AND fetches the lmgit host on first use
-lmgit --dsl build/repo-status.dslb       # or run it straight from the lmscript tool cache
+lmgit --lmcode build/repo-status.dslb       # or run it straight from the lmscript tool cache
 ```
 
 The only runtime requirement is `git` itself (version >= 2.20). Set
 `LMGIT_GIT` to point at a `git` that is not on `PATH`.
 
 The schema ([`schema/lmgit.dsl.json`](schema/lmgit.dsl.json)) is the
-contract: `lmgit --dsl-schema` prints the exact embedded bytes and
-`lmgit --dsl-signatures` the host registry. Contexts: `git: Git` (global
+contract: `lmgit --lmcode-schema` prints the exact embedded bytes and
+`lmgit --lmcode-signatures` the host registry. Contexts: `git: Git` (global
 operations and the dry-run policy) and `report: Report` (findings log with
 `write_text`, `write_json` and `fail_if_any`, which fails with exit 4 /
 `APP_FAIL` when non-empty).

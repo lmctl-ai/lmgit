@@ -23,7 +23,7 @@ tool cache) because each recipe names it on the `_lmcode_` line:
 
 ```sh
 lmscript examples/repo-status.lms /path/to/repo   # compile to build/repo-status.dslb
-lmgit --dsl build/repo-status.dslb                # run
+lmgit --lmcode build/repo-status.dslb                # run
 ```
 
 If `lmgit` is already on `PATH`, the download is skipped and that binary is
