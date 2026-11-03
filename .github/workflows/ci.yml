@@ -173,4 +173,6 @@ jobs:
           echo "$got on $(uname -srm)"
 
       - name: Real git, strict manifest, dry effects and terminal frame checks
-        run: python3 tests/protocol.py "$PWD/${{ matrix.asset }}" --evidence "$PWD/build/native-protocol"
+        run: |
+          if [[ "$RUNNER_OS" == Windows ]]; then python=python; else python=python3; fi
+          "$python" tests/protocol.py "$PWD/${{ matrix.asset }}" --evidence "$PWD/build/native-protocol"
