@@ -2,7 +2,7 @@
 # Run:    lmscript examples/repo-status.lms [repo-path]
 path = ARGV.len() > 0 ? ARGV[0] : ".";
 
-schema = load_schema(cli="lmgit" install="github:lmctl-ai/lmgit@latest");
+schema = load_schema(cli="lmgit" install="github:lmctl-ai/lmgit@v0.2.9");
 p = _lmcode_ schema;
 let repo = git.open(${path});
 print("repo: " + ${path});
