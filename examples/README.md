@@ -19,10 +19,9 @@ ambient git repository.
 
 Each recipe calls explicit load_schema followed by run_lmcode. Run, for example,
 `lmscript examples/repo-status.lms /path/to/repo`. A binary on PATH is used;
-otherwise explicit real discovery may download the declared release. Pin a
-specific CI tag for downstream reproducibility. Check mode needs the schema
-already cached by real discovery. The examples create their report directory;
-there is no public compiled-file output argument.
+otherwise explicit real discovery may download the pinned lmgit v0.2.9 release.
+Check mode needs the schema already cached by real discovery. The examples create
+their report directory; there is no public compiled-file output argument.
 
 The existing stdout/report oracles are exercised by ./test.sh. Terminal frames
 are consumed by run_lmcode; application failures still exit4. The status example
