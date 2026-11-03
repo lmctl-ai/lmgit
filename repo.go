@@ -70,9 +70,10 @@ func (h *Host) registerGit() {
 		h.dryRun = vbool(args[0])
 		return lmcode.Object("Git", h), nil
 	})
-	method("is_dry_run", nil, "bool", func(h *Host, _ []lmcode.Value) (lmcode.Value, error) {
-		return lmcode.Boolean(h.dryRun), nil
-	})
+	h.must(h.reg.Method("Git", "is_dry_run", nil, "bool", func(self any, _ []lmcode.Value) (lmcode.Value, error) {
+		h := self.(*Host)
+		return lmcode.Boolean(h.invocationDry || h.dryRun), nil
+	}, lmcode.Dry(lmcode.Method(func(_ any, _ []lmcode.Value) (lmcode.Value, error) { return lmcode.Boolean(true), nil }))))
 
 	method("version", nil, "string", func(h *Host, _ []lmcode.Value) (lmcode.Value, error) {
 		if err := h.ensureGit(); err != nil {

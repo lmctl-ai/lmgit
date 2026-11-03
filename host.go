@@ -12,7 +12,7 @@ import (
 	"github.com/lmctl-ai/lmcode-go"
 )
 
-const version = "0.1.2"
+var version = "0.2.0"
 
 // gitVersionRe parses the first line of `git --version`.
 var gitVersionRe = regexp.MustCompile(`git version (\d+)\.(\d+)\.(\d+)`)
@@ -22,9 +22,10 @@ var gitVersionRe = regexp.MustCompile(`git version (\d+)\.(\d+)\.(\d+)`)
 type Host struct {
 	reg *lmcode.Registry
 
-	gitPath string
-	gitSeen bool
-	dryRun  bool
+	gitPath       string
+	gitSeen       bool
+	dryRun        bool
+	invocationDry bool
 
 	repos    []*Repo
 	statuses []*StatusList
@@ -148,18 +149,14 @@ func (h *Host) run(prefix []string, args []string) (string, error) {
 		if detail == "" {
 			detail = err.Error()
 		}
-		lines := strings.Split(detail, "\n")
-		if len(lines) > 3 {
-			lines = lines[:3]
-		}
-		return "", lmcode.NewHostError("git " + strings.Join(args, " ") + " failed: " + strings.Join(lines, " | "))
+		return "", lmcode.NewHostError("git " + strings.Join(args, " ") + " failed: " + detail)
 	}
 	return stdout.String(), nil
 }
 
 func checkLimit(limit int64) error {
-	if limit < 1 || limit > 1000 {
-		return lmcode.NewHostError(fmt.Sprintf("invalid limit %d: expected 1..1000", limit))
+	if limit < 1 {
+		return lmcode.NewHostError(fmt.Sprintf("invalid limit %d: expected a positive limit", limit))
 	}
 	return nil
 }

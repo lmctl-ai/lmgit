@@ -15,6 +15,8 @@ host keeps clear of git's GPL-2.0) and pinned by `git.lock`. The previous
 Bun/TypeScript `git2` lmapi-server iteration of this project lives on as the
 `lmctl-ai/lmgitcli` repository.
 
+Current adoption: [05-current-host-protocol.md](05-current-host-protocol.md) supersedes historical v0 instructions below.
+
 ## 60-second takeover
 
 ```sh

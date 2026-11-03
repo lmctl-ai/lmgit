@@ -1,13 +1,17 @@
 # Repository status: current branch, cleanliness, and the porcelain list.
 # Run:    lmscript examples/repo-status.lms [repo-path]
-out = ARGV.len() > 0 ? ARGV[0] : "build/repo-status.dslb";
-path = ARGV.len() > 1 ? ARGV[1] : ".";
+path = ARGV.len() > 0 ? ARGV[0] : ".";
 
-p = _lmcode_ cli="lmgit" install="github:lmctl-ai/lmgit@latest";
+schema = load_schema(cli="lmgit" install="github:lmctl-ai/lmgit@latest");
+p = _lmcode_ schema;
 let repo = git.open(${path});
 print("repo: " + ${path});
-print("branch: " + repo.current_branch());
-if (repo.is_clean()) {
+let branch = repo.current_branch();
+print("branch: " + branch);
+$return.branch = branch;
+let clean = repo.is_clean();
+$return.clean = clean;
+if (clean) {
   print("working tree: clean");
 } else {
   print("working tree: dirty");
@@ -20,4 +24,10 @@ for (i in range(0, entries.len())) {
 }
 report.write_json("build/repo-status.json");
 end _lmcode_
-savedsl(p, out);
+mkdir("build");
+result = run_lmcode(p);
+if (!result.ok) {
+  print(json_stringify(result));
+  if (result.phase == "app") { lm_exit(4); }
+  lm_exit(3);
+}

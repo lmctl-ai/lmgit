@@ -1,10 +1,10 @@
 # Recent commits with hash, author and date.
 # Run:    lmscript examples/recent-commits.lms [repo-path] [limit]
-out = ARGV.len() > 0 ? ARGV[0] : "build/recent-commits.dslb";
-path = ARGV.len() > 1 ? ARGV[1] : ".";
-limit = ARGV.len() > 2 ? num(ARGV[2]) : 10;
+path = ARGV.len() > 0 ? ARGV[0] : ".";
+limit = ARGV.len() > 1 ? num(ARGV[1]) : 10;
 
-p = _lmcode_ cli="lmgit" install="github:lmctl-ai/lmgit@latest";
+schema = load_schema(cli="lmgit" install="github:lmctl-ai/lmgit@latest");
+p = _lmcode_ schema;
 let repo = git.open(${path});
 let commits = repo.log(${limit});
 for (i in range(0, commits.len())) {
@@ -14,4 +14,10 @@ for (i in range(0, commits.len())) {
 }
 report.write_text("build/recent-commits.txt");
 end _lmcode_
-savedsl(p, out);
+mkdir("build");
+result = run_lmcode(p);
+if (!result.ok) {
+  print(json_stringify(result));
+  if (result.phase == "app") { lm_exit(4); }
+  lm_exit(3);
+}

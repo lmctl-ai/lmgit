@@ -1,11 +1,11 @@
 # Creates a branch and switches to it. Dry-run unless a 3rd argument is given.
 # Run:    lmscript examples/new-branch.lms [repo-path] <name> [--live]
-out = ARGV.len() > 0 ? ARGV[0] : "build/new-branch.dslb";
-path = ARGV.len() > 1 ? ARGV[1] : ".";
-name = ARGV.len() > 2 ? ARGV[2] : "automation/bump";
-live = ARGV.len() > 3 ? ARGV[3] == "--live" : false;
+path = ARGV.len() > 0 ? ARGV[0] : ".";
+name = ARGV.len() > 1 ? ARGV[1] : "automation/bump";
+live = ARGV.len() > 2 ? ARGV[2] == "--live" : false;
 
-p = _lmcode_ cli="lmgit" install="github:lmctl-ai/lmgit@latest";
+schema = load_schema(cli="lmgit" install="github:lmctl-ai/lmgit@latest");
+p = _lmcode_ schema;
 git.dry_run(!${live});
 let repo = git.open(${path});
 let b = repo.branch_create(${name});
@@ -20,4 +20,10 @@ if (!git.is_dry_run()) {
 }
 report.write_text("build/new-branch.txt");
 end _lmcode_
-savedsl(p, out);
+mkdir("build");
+result = run_lmcode(p);
+if (!result.ok) {
+  print(json_stringify(result));
+  if (result.phase == "app") { lm_exit(4); }
+  lm_exit(3);
+}

@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # lmgit end-to-end checks: build, schema parity, examples against a fake git,
 # and refusal tests. Mirrors lmgh's test.sh structure.
-set -u
+set -eu
 cd "$(dirname "$0")"
 mkdir -p build
 
@@ -11,7 +11,7 @@ fail() { echo "FAIL: $1" >&2; exit 1; }
 
 # --- compiler ----------------------------------------------------------
 LMSCRIPT="${LMSCRIPT_BIN:-$(command -v lmscript || true)}"
-[ -n "$LMSCRIPT" ] || fail "lmscript not found; npm install -g @lmctl-ai/lmctl"
+[ -n "$LMSCRIPT" ] || fail "lmscript not found; privately install @lmctl-ai/lmctl@0.2.456"
 LMSCRIPT="$(scripts/select-compiler.sh)" || fail "compiler capability probe"
 ok "compiler emitted v6 with implicit std"
 
@@ -33,9 +33,11 @@ exec python3 "$PWD/tests/fake-git.py" "\$@"
 EOF
 chmod +x build/fake-bin/git
 export PATH="$PWD/build/fake-bin:$PWD/build:$PATH"
+export LMSCRIPT_BIN="$LMSCRIPT"
+export LMSCRIPT_TOOL_CACHE="$PWD/build/test-tool-cache"
 
 # --- CLI protocol -------------------------------------------------------
-[ "$("$HOST" --version)" = "lmgit 0.1.2" ] || fail "--version"
+[[ "$("$HOST" --version)" == "lmgit "* ]] || fail "--version"
 ok "--version"
 cmp -s <("$HOST" --lmcode-schema) schema/lmgit.dsl.json || fail "--lmcode-schema bytes differ from schema/lmgit.dsl.json"
 ok "--lmcode-schema equals schema/lmgit.dsl.json"
@@ -79,14 +81,12 @@ ok "every host schema signature is registered"
 # --- examples -----------------------------------------------------------
 run_example() { # name [expected-exit]
   local name="$1" want="${2:-0}"
-  "$LMSCRIPT" "examples/$name.lms" "build/$name.dslb" >/dev/null || fail "$name compile"
-  od -An -t u1 -j 5 -N 1 "build/$name.dslb" | grep -q 6 || fail "$name is not bytecode v6"
   set +e
-  "$HOST" --lmcode "build/$name.dslb" > "build/$name.out" 2>&1
+  "$LMSCRIPT" "examples/$name.lms" > "build/$name.out" 2>&1
   local code=$?
   set -e
   [ "$code" = "$want" ] || fail "$name exit $code (want $want): $(cat build/$name.out)"
-  cmp -s "build/$name.out" "tests/expected/$name.out" || fail "$name stdout drift: $(diff tests/expected/$name.out build/$name.out | head -5)"
+  cmp -s "build/$name.out" "tests/expected/$name.out" || fail "$name stdout drift: $(diff tests/expected/$name.out build/$name.out)"
   ok "$name (exit $want)"
 }
 
@@ -111,12 +111,12 @@ WORK=build/test-chunks
 rm -rf "$WORK"; mkdir -p "$WORK"
 compile_chunk() { # name body
   cat > "$WORK/$1.lms" <<EOF2
-p = _lmcode_ cli="lmgit" install="github:lmctl-ai/lmgit@latest";
+p = _lmcode_ schema="$PWD/schema/lmgit.dsl.json";
 $2
 end _lmcode_
-savedsl(p, "$WORK/$1.dslb");
+
 EOF2
-  "$LMSCRIPT" "$WORK/$1.lms" >/dev/null || fail "$1 compile"
+  node scripts/compile-fixture.mjs "$WORK/$1.lms" "$WORK/$1.dslb" || fail "$1 compile"
 }
 
 expect_run() { # name want-exit needle
@@ -182,4 +182,5 @@ set -e
 [ "$code" = 4 ] && [[ "$out" == *'APP_FAIL'* ]] || fail "missing bytecode file (exit $code): $out"
 ok "missing bytecode file exits 4"
 
+go test ./... || fail "native protocol units"
 echo "PASS: $PASS checks"

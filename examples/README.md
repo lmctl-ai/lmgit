@@ -17,18 +17,13 @@ ambient git repository.
 
 ## Running
 
-Nothing to install: on first compile, `lmscript` downloads the released
-lmgit host for your platform (SHA-256 verified, cached under the lmscript
-tool cache) because each recipe names it on the `_lmcode_` line:
+Each recipe calls explicit load_schema followed by run_lmcode. Run, for example,
+`lmscript examples/repo-status.lms /path/to/repo`. A binary on PATH is used;
+otherwise explicit real discovery may download the declared release. Pin a
+specific CI tag for downstream reproducibility. Check mode needs the schema
+already cached by real discovery. The examples create their report directory;
+there is no public compiled-file output argument.
 
-```sh
-lmscript examples/repo-status.lms /path/to/repo   # compile to build/repo-status.dslb
-lmgit --lmcode build/repo-status.dslb                # run
-```
-
-If `lmgit` is already on `PATH`, the download is skipped and that binary is
-used. Runtime requirement: `git` >= 2.20.
-
-`./test.sh` compiles every example, runs it against the canned `git` double
-in [tests/fake-git.py](../tests/fake-git.py), and diffs stdout and report
-files against [tests/expected/](../tests/expected/).
+The existing stdout/report oracles are exercised by ./test.sh. Terminal frames
+are consumed by run_lmcode; application failures still exit4. The status example
+also returns branch/clean as owned program result fields. Git >=2.20 is needed.

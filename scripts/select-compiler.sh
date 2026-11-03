@@ -13,11 +13,11 @@ printf '%s\n' '{"dsl.schema":2,"name":"compiler_probe","types":{},"functions":{}
 python3 - "$(native "$WORK/probe.schema.json")" "$(native "$WORK")" <<'PY'
 import json,pathlib,sys
 work=pathlib.Path(sys.argv[2])
-(work/'probe.lms').write_text('p = _dsl_ schema='+json.dumps(sys.argv[1])+';\nlet n = str_len("implicit std");\nend _dsl_\nsavedsl(p, '+json.dumps(str(work/'probe.dslb'))+');\n')
+(work/'probe.lms').write_text('p = _lmcode_ schema='+json.dumps(sys.argv[1])+';\nlet n = str_len("implicit std");\nend _lmcode_\n')
 PY
 if [ -n "$candidate" ] &&
    "$candidate" --lmcode-signatures "$WORK/probe.schema.json" > /dev/null 2>&1 &&
-   "$candidate" "$WORK/probe.lms" "$WORK/probe.dslb" > /dev/null 2>&1 &&
+   LMSCRIPT_BIN="$candidate" node scripts/compile-fixture.mjs "$WORK/probe.lms" "$WORK/probe.dslb" > /dev/null 2>&1 &&
    python3 - "$(native "$WORK/probe.dslb")" <<'PY'
 import pathlib,sys
 p=pathlib.Path(sys.argv[1])
@@ -29,10 +29,10 @@ else
   if [ -n "${LMGIT_DEBUG:-}" ]; then
     echo "--- compiler probe diagnostics (candidate=$candidate)" >&2
     cat "$WORK/probe.lms" >&2 || true
-    [ -n "$candidate" ] && "$candidate" --lmcode-signatures "$WORK/probe.schema.json" 2>&1 | head -3 >&2
-    [ -n "$candidate" ] && "$candidate" "$WORK/probe.lms" "$WORK/probe.dslb" 2>&1 | head -10 >&2
+    [ -n "$candidate" ] && "$candidate" --lmcode-signatures "$WORK/probe.schema.json" 2>&1  >&2
+    [ -n "$candidate" ] && "$candidate" "$WORK/probe.lms" "$WORK/probe.dslb" 2>&1  >&2
     ls -la "$WORK" >&2
   fi
-  echo "error: no implicit-std lmcode v6 compiler found; install @lmctl-ai/lmctl@0.2.420 so lmscript is on PATH, or set LMSCRIPT_BIN" >&2
+  echo "error: no implicit-std lmcode v6 compiler found; privately install @lmctl-ai/lmctl@0.2.456 so lmscript is on PATH, or set LMSCRIPT_BIN" >&2
   exit 2
 fi

@@ -23,21 +23,38 @@ jobs:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false
+          fetch-depth: 0
       - uses: actions/setup-go@44694675825211faa026b3c33043df3e48a5fa00 # v6.0.0
         with:
           go-version: "1.26"
       - uses: actions/setup-node@2028fbc5c25fe9cf00d9f06a71cc4710d4507903 # v6.0.0
         with:
-          node-version: "22"
+          node-version: "24"
       - name: Install lmscript
-        run: npm install -g @lmctl-ai/lmctl@0.2.426
+        run: |
+          npm install --prefix "$RUNNER_TEMP/lmgit-tools" --no-audit --no-fund @lmctl-ai/lmctl@0.2.456
+          echo "$RUNNER_TEMP/lmgit-tools/node_modules/.bin" >> "$GITHUB_PATH"
+          echo "LMSCRIPT_BIN=$RUNNER_TEMP/lmgit-tools/node_modules/.bin/lmscript" >> "$GITHUB_ENV"
       - name: Build and test
-        run: ./test.sh
+        run: |
+          go test -race ./...
+          go vet ./...
+          ./test.sh
+          python3 tests/protocol.py build/lmgit
+      - name: Compare six operations with the pre-adoption host on identical inputs
+        run: |
+          mkdir -p build/before
+          git archive ab3df2167df75070997407de080d43e27a37c947 | tar -x -C build/before
+          (cd build/before && CGO_ENABLED=0 go build -o lmgit .)
+          python3 tests/protocol.py build/lmgit --before build/before/lmgit --evidence build/parity
 
   release:
-    # Pushing a v* tag publishes: assets build only after tests pass.
-    if: startsWith(github.ref, 'refs/tags/v')
+    # Main pushes create a CI-owned version; operator tags remain supported.
+    if: github.ref == 'refs/heads/main' || startsWith(github.ref, 'refs/tags/v')
     needs: test
+    outputs:
+      version: ${{ steps.version.outputs.version }}
+      tag: ${{ steps.version.outputs.tag }}
     runs-on: ubuntu-latest
     timeout-minutes: 15
     permissions:
@@ -50,13 +67,19 @@ jobs:
         with:
           go-version: "1.26"
 
+      - name: Select the CI-owned immutable release version
+        id: version
+        run: |
+          if [[ "$GITHUB_REF" == refs/tags/v* ]]; then version="${GITHUB_REF_NAME#v}"; else version="0.2.$GITHUB_RUN_NUMBER"; fi
+          echo "version=$version" >> "$GITHUB_OUTPUT"
+          echo "tag=v$version" >> "$GITHUB_OUTPUT"
       - name: Build release assets (Go cross-compiles; one runner builds all six)
         run: |
           PROG=lmgit
           OUT=dist
           mkdir -p "$OUT"
           build() { # goos os arch suffix
-            GOOS="$1" GOARCH="$3" CGO_ENABLED=0 go build -trimpath -ldflags='-buildid=' \
+            GOOS="$1" GOARCH="$3" CGO_ENABLED=0 go build -trimpath -ldflags="-buildid= -X main.version=${{ steps.version.outputs.version }}" \
               -o "$OUT/$PROG-$2-$4$5" .
           }
           build linux linux amd64 x64 ""
@@ -70,7 +93,7 @@ jobs:
       - name: Tag matches lmgit --version (lmscript @latest compares them)
         run: |
           got="$(./dist/lmgit-linux-x64 --version)"
-          test "$got" = "lmgit ${GITHUB_REF_NAME#v}" || { echo "::error::tag $GITHUB_REF_NAME but binary says '$got' (bump the version constant in host.go)"; exit 1; }
+          test "$got" = "lmgit ${{ steps.version.outputs.version }}" || { echo "::error::tag $GITHUB_REF_NAME but binary says '$got' (bump the version constant in host.go)"; exit 1; }
 
       - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
         with:
@@ -83,24 +106,24 @@ jobs:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           # idempotent: re-running a tag's workflow overwrites the assets
-          if gh release view "$GITHUB_REF_NAME" -R "$GITHUB_REPOSITORY" >/dev/null 2>&1; then
-            gh release upload "$GITHUB_REF_NAME" -R "$GITHUB_REPOSITORY" --clobber dist/*
+          if gh release view "${{ steps.version.outputs.tag }}" -R "$GITHUB_REPOSITORY" >/dev/null 2>&1; then
+            gh release upload "${{ steps.version.outputs.tag }}" -R "$GITHUB_REPOSITORY" --clobber dist/*
           else
-            gh release create "$GITHUB_REF_NAME" -R "$GITHUB_REPOSITORY" --title "lmgit ${GITHUB_REF_NAME#v}" --generate-notes dist/*
+            gh release create "${{ steps.version.outputs.tag }}" -R "$GITHUB_REPOSITORY" --title "lmgit ${{ steps.version.outputs.version }}" --target "$GITHUB_SHA" --generate-notes dist/*
           fi
 
-      - name: Verify the uploaded windows-arm64 asset (no hosted arm64 Windows runner exists)
+      - name: Verify the uploaded windows-arm64 asset (cross-build checksum coverage)
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          gh release download "$GITHUB_REF_NAME" -R "$GITHUB_REPOSITORY" -p 'lmgit-windows-arm64.exe'
+          gh release download "${{ steps.version.outputs.tag }}" -R "$GITHUB_REPOSITORY" -p 'lmgit-windows-arm64.exe'
           echo "$(grep 'lmgit-windows-arm64.exe' dist/SHA256SUMS | awk '{print $1}')  lmgit-windows-arm64.exe" | sha256sum -c -
 
   verify:
     # Download every asset on a machine running its real OS and execute it.
     # GitHub provides x64/arm64 Linux, Apple Silicon/Intel macOS and Windows
     # runners; windows-arm64 is covered by the download-back checksum above.
-    if: startsWith(github.ref, 'refs/tags/v')
+    if: github.ref == 'refs/heads/main' || startsWith(github.ref, 'refs/tags/v')
     needs: release
     runs-on: ${{ matrix.os }}
     name: verify ${{ matrix.asset }}
@@ -110,17 +133,29 @@ jobs:
         include:
           - { os: ubuntu-22.04,     asset: lmgit-linux-x64 }
           - { os: ubuntu-22.04-arm, asset: lmgit-linux-arm64 }
-          - { os: macos-15,         asset: lmgit-macos-arm64 }
-          - { os: macos-15-intel,   asset: lmgit-macos-x64 }
+          - { os: macos-26,         asset: lmgit-macos-arm64 }
+          - { os: macos-26-intel,   asset: lmgit-macos-x64 }
           - { os: windows-2022,     asset: lmgit-windows-x64.exe }
     defaults:
       run:
         shell: bash
     steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@2028fbc5c25fe9cf00d9f06a71cc4710d4507903
+        with:
+          node-version: "24"
+      - name: Install compiler privately for native protocol verification
+        run: |
+          npm install --prefix "$RUNNER_TEMP/lmgit-tools" --no-audit --no-fund @lmctl-ai/lmctl@0.2.456
+          echo "$RUNNER_TEMP/lmgit-tools/node_modules/.bin" >> "$GITHUB_PATH"
+          if [[ "$RUNNER_OS" == Windows ]]; then compiler="$RUNNER_TEMP/lmgit-tools/node_modules/.bin/lmscript.cmd"; else compiler="$RUNNER_TEMP/lmgit-tools/node_modules/.bin/lmscript"; fi
+          echo "LMSCRIPT_BIN=$compiler" >> "$GITHUB_ENV"
       - name: Download asset + SHA256SUMS from the release
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: gh release download "$GITHUB_REF_NAME" -R "$GITHUB_REPOSITORY" -p '${{ matrix.asset }}' -p SHA256SUMS
+        run: gh release download "${{ needs.release.outputs.tag }}" -R "$GITHUB_REPOSITORY" -p '${{ matrix.asset }}' -p SHA256SUMS
 
       - name: Checksum matches the release SHA256SUMS
         run: |
@@ -134,5 +169,8 @@ jobs:
         run: |
           chmod +x '${{ matrix.asset }}'
           got="$(./'${{ matrix.asset }}' --version)"
-          test "$got" = "lmgit ${GITHUB_REF_NAME#v}" || { echo "::error::'$got' != 'lmgit ${GITHUB_REF_NAME#v}'"; exit 1; }
+          test "$got" = "lmgit ${{ needs.release.outputs.version }}" || { echo "::error::'$got' != 'lmgit ${{ needs.release.outputs.version }}'"; exit 1; }
           echo "$got on $(uname -srm)"
+
+      - name: Real git, strict manifest, dry effects and terminal frame checks
+        run: python3 tests/protocol.py "$PWD/${{ matrix.asset }}" --evidence "$PWD/build/native-protocol"

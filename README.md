@@ -1,77 +1,101 @@
-# lmgit — git as an lmcode tool
+# lmgit — git as an lmcode host
 
-lmgit is a native host for [lmcode](https://github.com/lmctl-ai/lmcode-go)
-bytecode that turns git into a scriptable, type-checked API: LMScript source
-is compiled against the lmgit schema into DSL bytecode, and the `lmgit`
-host executes it through the `git` binary (argv only, prompts disabled),
-producing typed `Repo`, `Commit`, `Branch` and status objects plus a
-`Report` for findings.
+lmgit exposes Git through the reviewed Go lmcode SDK: typed repositories,
+commits, branches, status entries and reports. Git is a separate argv-only
+process, with prompts, color and pagers disabled. No Git code is linked.
+See [THIRD-PARTY-NOTICES.md](THIRD-PARTY-NOTICES.md) and [git.lock](git.lock).
 
-This repository is the lmctl-ai fork of [`git/git`](https://github.com/git/git):
-upstream is vendored under `third_party/git` and pinned by
-[`git.lock`](git.lock). The lmgit-authored host, schema and examples are MIT
-licensed (see [LICENSE](LICENSE)); git itself is GPL-2.0 and is **not**
-linked or copied — lmgit drives the `git` binary as a separate process, the
-same way lmgh drives `gh` (see
-[THIRD-PARTY-NOTICES.md](THIRD-PARTY-NOTICES.md)).
+## Run a program
 
-## Use it — no installation
-
-Users do **not** install lmgit and do **not** need Go. A `_lmcode_` block
-that names lmgit makes `lmscript` download the released host binary for your
-platform (SHA-256 verified, cached), compile against its embedded schema,
-and run it:
+Use a current compiler (the gates pin `@lmctl-ai/lmctl@0.2.456`, privately
+installed). Git >=2.20 is required; `LMGIT_GIT` selects a specific executable.
+The eight [examples](examples/README.md) execute through `run_lmcode`.
 
 ```lms
-out = ARGV.len() > 0 ? ARGV[0] : "build/repo-status.dslb";
-path = ARGV.len() > 1 ? ARGV[1] : ".";
-p = _lmcode_ cli="lmgit" install="github:lmctl-ai/lmgit@latest";
-let repo = git.open(${path});
-print("branch: " + repo.current_branch());
-let commits = repo.log(5);
-for (i in range(0, commits.len())) {
-  print(commits.at(i).hash() + " " + commits.at(i).subject());
-}
+schema = load_schema(cli="lmgit" install="github:lmctl-ai/lmgit@latest");
+program = _lmcode_ schema;
+let repo = git.open(".");
+$return.branch = repo.current_branch();
+$return.clean = repo.is_clean();
 end _lmcode_
-savedsl(p, out);
+result = run_lmcode(program);
+require(result.ok, "git host failed");
+print(json_stringify(result.result));
 ```
 
-```sh
-lmscript repo-status.lms /path/to/repo   # compiles AND fetches the lmgit host on first use
-lmgit --lmcode build/repo-status.dslb       # or run it straight from the lmscript tool cache
-```
+The host is discovered explicitly; a local binary on PATH wins over the tool
+cache. For reproducible downstream use, replace `latest` with the exact CI
+release tag. The release's SHA256SUMS pins each platform asset. No computed
+bytecode-output path is part of the public example contract.
 
-The only runtime requirement is `git` itself (version >= 2.20). Set
-`LMGIT_GIT` to point at a `git` that is not on `PATH`.
+## Host protocol
 
-The schema ([`schema/lmgit.dsl.json`](schema/lmgit.dsl.json)) is the
-contract: `lmgit --lmcode-schema` prints the exact embedded bytes and
-`lmgit --lmcode-signatures` the host registry. Contexts: `git: Git` (global
-operations and the dry-run policy) and `report: Report` (findings log with
-`write_text`, `write_json` and `fail_if_any`, which fails with exit 4 /
-`APP_FAIL` when non-empty).
+- `--version`: exact build version.
+- `--lmcode-schema [--json]`: exact hash-bound schema bytes.
+- `--lmcode-signatures`: sorted SDK and domain signatures.
+- `--lmcode FILE [--lmcode FILE ...]`: one invocation, single or builder.
 
-## Operation catalog (v0)
+Execution ends in exactly one `LMCODE_RETURN_BEGIN` / `LMCODE_RETURN_END`
+frame. `run_lmcode` consumes the frame. Success contains the program's owned
+result (null if unwritten); builders contain separate results in add order.
+Failures contain phase/code/message and optional source/part association,
+never partial result arrays. Exit codes are 0 success, 2 CLI/metadata,
+3 load/run and 4 application failure. Unreadable input remains an application
+failure. Program traces precede the terminal frame.
 
-Global: `version`, `open(path) -> Repo`, `clone(url, path) -> Repo`.
-Repo reads: `path`, `current_branch`, `is_clean`, `status`, `branches`,
-`log(limit)`, `tags`, `remote_names`, `remote_url`, `config`, `diff(staged)`,
-`show(ref)`.
-Writes: `checkout`, `branch_create`, `commit` (returns the new HEAD sha),
-`push`, `tag_create` — all honor `git.dry_run(bool)`, which records intent
-in the report instead of running git.
+The private version-1 `LMCODE_INVOCATION_FILE` descriptor requires boolean
+`dry`. Missing/nonboolean values are rejected before any input read or Git
+dispatch. No default insertion or retry is performed. Metadata file strings
+and CLI occurrences are correlated exactly, without path normalization.
+Introspection does not read execution metadata or start Git.
 
-## Develop
+## Dry policy
 
-```sh
-go build -o build/lmgit .   # from a source checkout; needs Go 1.26
-scripts/sync-git.sh         # fetch the pinned git/git checkout (third_party/)
-./test.sh                   # 34 checks: build, parity, examples vs a fake git, refusals
-```
+The immutable invocation dry flag is copied into the SDK context. Host callbacks
+are skipped by default and return the SDK's typed dummies; `git.is_dry_run()` has
+an explicit preview returning true. No Git process or report-file write occurs
+in invocation dry mode. Pure standard previews and result writes retain their
+SDK behavior; this is not a sandbox for arbitrary bytecode.
 
-Releases: pushing a `v*` tag publishes automatically — CI runs `./test.sh`
-and, once tests pass, cross-builds the six `lmgit-{linux,macos,windows}-{x64,arm64}`
-assets plus `SHA256SUMS` and creates the GitHub release (the asset names are
-the lmscript `install=` convention). `scripts/release.sh <version>` remains as
-the local fallback. [durable-memory/](durable-memory/) records the design and
-decisions.
+The existing `git.dry_run(bool)` operation remains a real-mode domain policy:
+its write operations record intent instead of running Git. It cannot disable
+an invocation's dry mode. All existing operations remain available.
+
+## Operations
+
+Global: version, open and clone. Repository reads: path, current_branch,
+is_clean, status, branches, log(limit), tags, remote_names, remote_url, config,
+diff(staged) and show. Writes: checkout, branch_create, commit, push and
+tag_create. Lists expose len/at and typed properties. Report exposes add,
+len, write_text, write_json and fail_if_any.
+
+Log limits are caller-selected positive integers, with no arbitrary upper
+ceiling. Git stdout/stderr and program results are not truncated. Platform
+representability and available resources still apply; no host deadline or
+implicit output/work budget is introduced.
+
+## Develop and qualify
+
+Go1.26 and Node24 are used by CI. Build with `go build -o build/lmgit .`, then
+run `./test.sh` with LMSCRIPT_BIN pointing at a privately installed compiler.
+That preserves all34 established fake-Git checks and eight example/report
+oracles. `go test -race ./...` and `go vet ./...` check native code.
+`python3 tests/protocol.py build/lmgit` exercises a real scratch repository,
+strict metadata, builder order, dry effects, all exit classes and large output.
+Its optional --before argument compares six operations on identical inputs
+against the pre-adoption host; CI builds that immutable historical revision.
+
+[sdk.lock](sdk.lock) records the full reviewed Go runtime SHA; go.mod/go.sum
+pin its module bytes. Fixture generation uses the compiler library only in
+maintainer tooling, never a public export operation. SDK defects must be
+reported upstream rather than patched in this host.
+
+## CI releases
+
+After tests pass on main, CI selects version `0.2.RUN_NUMBER`, cross-builds six
+assets, publishes the versioned release and SHA256SUMS, then downloads and
+checks the actual binaries on Linux x64/arm64, macOS x64/arm64 and Windows x64.
+Those five jobs run the real-Git protocol/effect suite, not just --version.
+Windows arm64 has a cross-build and upload checksum check, without a native
+execution claim. Operator-supplied version tags still use the same CI pipeline.
+No manual tag or release command is required for adoption.
