@@ -12,7 +12,7 @@ installed). Git >=2.20 is required; `LMGIT_GIT` selects a specific executable.
 The eight [examples](examples/README.md) execute through `run_lmcode`.
 
 ```lms
-schema = load_schema(cli="lmgit" install="github:lmctl-ai/lmgit@v0.2.9");
+schema = load_schema(cli="lmgit" install="github:lmctl-ai/lmgit@v0.2.12");
 program = _lmcode_ schema;
 let repo = git.open(".");
 $return.branch = repo.current_branch();

@@ -5,7 +5,7 @@ path = ARGV.len() > 0 ? ARGV[0] : ".";
 message = ARGV.len() > 1 ? ARGV[1] : "chore: automated commit";
 live = ARGV.len() > 2 ? ARGV[2] == "--live" : false;
 
-schema = load_schema(cli="lmgit" install="github:lmctl-ai/lmgit@v0.2.9");
+schema = load_schema(cli="lmgit" install="github:lmctl-ai/lmgit@v0.2.12");
 p = _lmcode_ schema;
 git.dry_run(!${live});
 let repo = git.open(${path});
