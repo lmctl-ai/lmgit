@@ -33,3 +33,4 @@ go build -o build/lmgit .
 | [02-schema-v0.md](02-schema-v0.md) | the v0 API catalog and design decisions |
 | [03-build-run-test.md](03-build-run-test.md) | install story, CLI protocol, test flow |
 | [04-open-items.md](04-open-items.md) | known gaps and candidate v1 work |
+| [06-std-rest-and-cli-interfaces.md](06-std-rest-and-cli-interfaces.md) | `lmcode_std_v3` 226 signatures, `RestGet` / `CliCommand` / `CliOption`, and `rest_cli` |

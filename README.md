@@ -74,6 +74,35 @@ ceiling. Git stdout/stderr and program results are not truncated. Platform
 representability and available resources still apply; no host deadline or
 implicit output/work budget is introduced.
 
+## Standard `lmcode` REST & Stateless CLI Interfaces
+
+`lmgit` includes the 226-signature `lmcode_std_v3` standard catalog with `RestGet`..`RestOptions`, `RestHandler`, `CliCommand`, `CliOption`, `rest_config`, `rest_route`, `rest_serve`, and `rest_cli`:
+
+```lms
+p = _lmcode_ schema="schema/lmgit.dsl.json";
+@"--repo"
+fn opt_repo(x: RestExchange) -> void implements CliOption {
+  x.set("repo", x.query("repo"));
+}
+
+@"branch"
+fn cmd_branch(x: RestExchange) -> void implements CliCommand {
+  let r = git.open(x.get("repo"));
+  x.send("branch:" + r.current_branch());
+}
+
+@"/repo/tags"
+fn get_tags(x: RestExchange) -> void implements RestGet {
+  let r = git.open(".");
+  x.json("{\"tags\":" + str(r.tags().len()) + "}");
+}
+
+rest_config("session", "global");
+print(rest_cli(str_split("--repo=. branch", " ")));
+print(rest_cli(str_split("/repo/tags", " ")));
+end _lmcode_
+```
+
 ## Develop and qualify
 
 Go1.26 and Node24 are used by CI. Build with `go build -o build/lmgit .`, then

@@ -11,7 +11,7 @@ fail() { echo "FAIL: $1" >&2; exit 1; }
 
 # --- compiler ----------------------------------------------------------
 LMSCRIPT="${LMSCRIPT_BIN:-$(command -v lmscript || true)}"
-[ -n "$LMSCRIPT" ] || fail "lmscript not found; privately install @lmctl-ai/lmctl@0.2.456"
+[ -n "$LMSCRIPT" ] || fail "lmscript not found; privately install @lmctl-ai/lmctl@0.2.482"
 LMSCRIPT="$(scripts/select-compiler.sh)" || fail "compiler capability probe"
 ok "compiler emitted v6 with implicit std"
 
@@ -181,6 +181,35 @@ out=$("$HOST" --lmcode "$WORK/absent.dslb" 2>&1); code=$?
 set -e
 [ "$code" = 4 ] && [[ "$out" == *'APP_FAIL'* ]] || fail "missing bytecode file (exit $code): $out"
 ok "missing bytecode file exits 4"
+
+# --- std REST endpoints and stateless CLI (RestGet, CliCommand, CliOption, rest_cli) ---
+cat > "$WORK/std-rest-cli.lms" <<EOF_REST
+p = _lmcode_ schema="$PWD/schema/lmgit.dsl.json";
+@"--repo"
+fn opt_repo(x: RestExchange) -> void implements CliOption {
+  x.set("repo", x.query("repo"));
+}
+
+@"branch"
+fn cmd_branch(x: RestExchange) -> void implements CliCommand {
+  let r = git.open(x.get("repo"));
+  x.send("branch:" + r.current_branch());
+}
+
+@"/repo/tags"
+fn get_tags(x: RestExchange) -> void implements RestGet {
+  let r = git.open(".");
+  x.json("{\"tags\":" + str(r.tags().len()) + "}");
+}
+
+rest_config("session", "global");
+print(rest_cli(str_split("--repo=. branch", " ")));
+print(rest_cli(str_split("/repo/tags", " ")));
+end _lmcode_
+EOF_REST
+node scripts/compile-fixture.mjs "$WORK/std-rest-cli.lms" "$WORK/std-rest-cli.dslb" || fail "std-rest-cli compile"
+expect_run std-rest-cli 0 'branch:main'
+expect_run std-rest-cli 0 '{"tags":2}'
 
 go test ./... || fail "native protocol units"
 echo "PASS: $PASS checks"
