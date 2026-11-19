@@ -1,5 +1,7 @@
 # lmgit — git as an lmcode host
 
+Documentation: [Quick reference](https://www.lmctl.com/tools/lmgit/) · [LLM skill](https://www.lmctl.com/tools/lmgit/skill.html) · [Guide](https://www.lmctl.com/tools/lmgit/guide.html) · [Reference](https://www.lmctl.com/tools/lmgit/reference.html)
+
 lmgit exposes Git through the reviewed Go lmcode SDK: typed repositories,
 commits, branches, status entries and reports. Git is a separate argv-only
 process, with prompts, color and pagers disabled. No Git code is linked.
